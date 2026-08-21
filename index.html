@@ -7,7 +7,15 @@
 <script>
 const URL='https://avvypwbowkslcrhdjcge.supabase.co';
 const KEY='sb_publishable_KMnhbqqJ1EHl5TFsbvUM2A_s0TiZVkd';
-const db=supabase.createClient(URL,KEY),$=s=>document.querySelector(s);
+
+console.log('URL=', URL);
+  console.log('KEY=", KEY);
+
+const db = supabase.createClient(
+  URL,
+  KEY);
+  
+  CONSOLE.LOG('db=',db);
 let user,books=[],rating=0,spice=0;const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),stars=n=>`<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
 function widgets(id,set,sym){for(let i=1;i<=5;i++){let b=document.createElement('button');b.type='button';b.textContent=sym;b.onclick=()=>{set(i);paint()};$(id).appendChild(b)}}function paint(){[...$('#rating').children].forEach((b,i)=>b.classList.toggle('on',i<rating));[...$('#spice').children].forEach((b,i)=>b.classList.toggle('on',i<spice))}
 async function load(){let {data,error}=await db.from('books').select('*').eq('user_id',user.id).order('updated_at',{ascending:false});if(error)return alert(error.message);books=data||[];render()}
