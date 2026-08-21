@@ -5,18 +5,24 @@
 </style></head><body><header><h1>📚 Noemi's Book Journal 📚</h1><div class="actions"><button id="theme" class="alt">Dark mode</button><button id="pdf" class="alt hidden">Export PDF</button><button id="logout" class="alt hidden">Sign out</button></div></header><main><section id="shared" class="shared hidden"></section><section id="auth" class="auth"><h2>Email sign in</h2><div class="field"><input id="email" type="email" placeholder="Email"></div><div class="field"><input id="password" type="password" minlength="6" placeholder="Password"></div><div class="actions"><button id="signin">Sign in</button><button id="signup" class="alt">Create account</button><button id="reset" class="alt">Reset password</button></div><p id="msg" class="muted"></p></section><section id="app" class="hidden"><div class="hero"><div><h2>Your reading life</h2><div id="who"></div><label>Reading goal <input id="goal" type="number" min="1" value="24" style="width:75px"></label><progress id="progress" value="0" max="24"></progress></div><div class="stats"><div><b id="count">0</b>Books</div><div><b id="avg">0.0</b>Avg</div><div><b id="done">0</b>Finished</div></div></div><div class="toolbar"><input id="filter" placeholder="Search journal"><select id="filterStatus"><option value="">All statuses</option><option>Want to Read</option><option>Currently Reading</option><option>Finished</option><option>DNF</option></select><button id="add">＋ Add</button></div><div id="grid" class="grid"></div><div id="empty" class="empty"><h2>No books yet</h2></div></section></main>
 <dialog id="dlg"><form id="form"><h2>Add or edit book</h2><input id="id" type="hidden"><div class="field"><label>Find book/cover</label><div class="actions"><input id="lookup" placeholder="Title, author, ISBN"><button type="button" id="search">Search</button></div><div id="results" class="results"></div></div><div class="row"><label>Title<input id="title" required></label><label>Author<input id="author"></label></div><div class="field"><label>Cover URL<input id="coverUrl"></label><label>Or photo<input id="coverFile" type="file" accept="image/*" capture="environment"></label></div><div class="row"><label>Status<select id="status"><option>Want to Read</option><option>Currently Reading</option><option>Finished</option><option>DNF</option></select></label><label>Favorite character<input id="character"></label></div><div class="row"><fieldset><legend>Rating</legend><div id="rating" class="ratings"></div></fieldset><fieldset><legend>Spice</legend><div id="spice" class="ratings sp"></div></fieldset></div><div class="field"><label>Notes<textarea id="notes" rows="5"></textarea></label></div><div class="row"><label>Recommend<select id="recommend"><option>Yes</option><option>Maybe</option><option>No</option></select></label><label>Tags<input id="tags"></label></div><div class="field"><label><input id="public" type="checkbox" style="width:auto"> Public/shareable</label></div><div class="actions"><button type="button" id="cancel" class="alt">Cancel</button><button type="submit">Save</button></div></form></dialog>
 <script>
-const URL='https://avvypwbowkslcrhdjcge.supabase.co';
-const KEY='sb_publishable_KMnhbqqJ1EHl5TFsbvUM2A_s0TiZVkd';
+const SUPABASE_URL = 'https://avvypwbowkslcrhdjcge.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_KMnhbqqJ1EHl5TFsbvUM2A_s0TiZVkd';
 
-console.log('URL=', URL);
-  console.log('KEY=', KEY);
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
-const db = supabase.createClient(
-  URL,
-  KEY);
-  
-  console.log('db=',db);
-let user,books=[],rating=0,spice=0;const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),stars=n=>`<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
+const $ = (selector) => document.querySelector(selector);
+
+console.log('Supabase URL:', SUPABASE_URL);
+console.log('Supabase client initialized:', db);
+
+let user = null;
+let books = [];
+let rating = 0;
+let spice = 0;
+  const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),stars=n=>`<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
 function widgets(id,set,sym){for(let i=1;i<=5;i++){let b=document.createElement('button');b.type='button';b.textContent=sym;b.onclick=()=>{set(i);paint()};$(id).appendChild(b)}}function paint(){[...$('#rating').children].forEach((b,i)=>b.classList.toggle('on',i<rating));[...$('#spice').children].forEach((b,i)=>b.classList.toggle('on',i<spice))}
 async function load(){let {data,error}=await db.from('books').select('*').eq('user_id',user.id).order('updated_at',{ascending:false});if(error)return alert(error.message);books=data||[];render()}
 function render(){let q=$('#filter').value.toLowerCase(),fs=$('#filterStatus').value,list=books.filter(b=>(!fs||b.reading_status===fs)&&[b.title,b.author,b.notes,b.tags].join(' ').toLowerCase().includes(q));$('#grid').innerHTML=list.map(b=>`<article class="card">${b.cover_url?`<img src="${esc(b.cover_url)}">`:`<div class="cover">${esc(b.title)}</div>`}<div><h3>${esc(b.title)}</h3><div class="muted">${esc(b.author)} · ${esc(b.reading_status)}</div><div>${stars(b.rating)} <span class="spice">${'●'.repeat(b.spice)}</span></div><div class="actions"><button onclick="viewBook('${b.id}')" class="alt">View</button><button onclick="editBook('${b.id}')">Edit</button><button onclick="shareBook('${b.id}')">Share</button><button onclick="deleteBook('${b.id}')" class="danger">Delete</button></div></div></article>`).join('');let done=books.filter(b=>b.reading_status==='Finished').length,goal=+(localStorage.goal||24);$('#empty').classList.toggle('hidden',books.length>0);$('#count').textContent=books.length;$('#avg').textContent=books.length?(books.reduce((a,b)=>a+b.rating,0)/books.length).toFixed(1):'0.0';$('#done').textContent=done;$('#goal').value=goal;$('#progress').max=goal;$('#progress').value=done}
