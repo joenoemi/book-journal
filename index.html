@@ -1,79 +1,107 @@
--- FRIENDS BOOK CLUB V9.2 MIGRATION
--- SAFE MIGRATION: does not drop public.books and does not delete any existing book rows.
-create extension if not exists pgcrypto;
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#5b4b8a"><title>Friends Book Club V9.2</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+:root{--p:#5b4b8a;--bg:#fbf8f2;--fg:#29243a;--card:#fff;--line:#ddd5e5;--muted:#756d80}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}body.dark{--bg:#17151d;--fg:#f5f1fb;--card:#25212c;--line:#4b4255;--muted:#bbb1c6}header,main{max-width:1100px;margin:auto;padding:18px}header{display:flex;justify-content:space-between;align-items:center;gap:12px}h1,h2,h3{font-family:Georgia,serif}button{border:0;border-radius:10px;padding:10px 13px;background:var(--p);color:#fff;font-weight:700;cursor:pointer}.alt{background:#eee9f4;color:var(--p)}.danger{background:#f6dede;color:#922}.hidden{display:none!important}.hero{padding:22px;border-radius:20px;background:linear-gradient(130deg,#3d315e,#745c99);color:white;display:flex;justify-content:space-between}.stats,.toolbar,.actions,.profiles{display:flex;gap:8px;flex-wrap:wrap}.stats{gap:20px}.stats b{display:block;font-size:1.5rem}.toolbar{margin:18px 0}.toolbar input{flex:1}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:15px}.card,.inbox-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px}.card{display:grid;grid-template-columns:90px 1fr;gap:12px}.card img,.cover{width:90px;height:135px;object-fit:cover;border-radius:8px;background:#eee9f4}.cover{display:grid;place-items:center;text-align:center;color:var(--p)}.muted{color:var(--muted);font-size:.85rem}.stars{color:#dda423}.badge{display:inline-block;background:#eee9f4;color:var(--p);border-radius:99px;padding:4px 7px;font-size:.7rem;font-weight:700}input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--fg);font:inherit}.field{margin:11px 0}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}dialog{width:min(760px,95vw);max-height:94vh;border:0;border-radius:18px;background:var(--card);color:var(--fg);padding:20px}dialog::backdrop{background:#211a30aa}dialog form{max-height:88vh;overflow:auto}.ratings{display:flex}.ratings button{background:none;border:0;font-size:1.6rem;padding:4px;opacity:.22;filter:grayscale(.7)}.ratings button.on{opacity:1;filter:none}.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}.result{display:flex;text-align:left;gap:6px;background:#eee9f4;color:#29243a}.result img{width:38px;height:55px;object-fit:cover}.gate{position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:20px;background:linear-gradient(145deg,#2f254b,#745c99)}.gate-card{width:min(520px,100%);padding:28px;border-radius:22px;background:#fff;color:#29243a;text-align:center}.profile-btn{flex:1;min-width:125px}.error{color:#922;min-height:1.3em}.inbox{margin:18px 0}.inbox-card{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0}.tabbar{display:flex;gap:8px;margin:18px 0}.shared{max-width:620px;margin:20px auto;text-align:center}.shared img{max-width:180px}@media(max-width:650px){.row{grid-template-columns:1fr}.hero{display:block}.toolbar{display:grid}.card{grid-template-columns:80px 1fr}.card img,.cover{width:80px;height:120px}.inbox-card{display:block}}
+</style></head><body>
+<section id="gate" class="gate"><div class="gate-card"><div style="font-size:3rem">📚</div><h1>Friends Book Club</h1><div id="profileStep"><p>Choose a profile.</p><div id="profileButtons" class="profiles"></div></div><form id="passForm" class="hidden"><h2 id="selectedName"></h2><p id="passInstructions"></p><label id="profileNameWrap" class="hidden">Profile name<input id="profileName" maxlength="40" placeholder="Enter profile name"></label><input id="passphrase" type="password" minlength="6" placeholder="Passphrase" required><label id="confirmWrap" class="hidden">Confirm passphrase<input id="confirmPassphrase" type="password" minlength="6" placeholder="Confirm passphrase"></label><div class="actions" style="justify-content:center;margin-top:10px"><button type="button" id="back" class="alt">Back</button><button type="submit" id="openProfileButton">Open Journal</button></div><p id="passError" class="error"></p></form></div></section><header id="header" class="hidden"><div><h1 id="journalTitle">Book Journal</h1><div id="profileLabel" class="muted"></div></div><div class="actions"><button id="theme" class="alt">Dark</button><button id="pdf" class="alt">Export PDF</button><button id="signout" class="alt">Sign Out</button></div></header>
+<main id="main" class="hidden"><section id="shared" class="shared hidden"></section><section id="app"><div class="hero"><div><h2>Your reading life</h2><label>Goal <input id="goal" type="number" min="1" value="24" style="width:75px"></label><progress id="progress" value="0" max="24"></progress></div><div class="stats"><div><b id="count">0</b>Books</div><div><b id="avg">0.0</b>Avg</div><div><b id="done">0</b>Finished</div><div><b id="inboxCount">0</b>Suggestions</div></div></div><div class="tabbar"><button id="libraryTab">My Library</button><button id="inboxTab" class="alt">Suggestions</button></div><section id="library"><div class="toolbar"><input id="filter" placeholder="Search journal"><select id="filterStatus"><option value="">All statuses</option><option>Want to Read</option><option>Currently Reading</option><option>Finished</option><option>DNF</option></select><button id="suggestTitle" class="alt">Suggest a title</button><button id="add">＋ Add book</button></div><div id="grid" class="grid"></div><div id="empty"><h2>No books yet</h2></div></section><section id="inbox" class="inbox hidden"><h2>Book suggestions</h2><div id="suggestions"></div></section></section></main>
+<dialog id="editor"><form id="bookForm"><h2>Add or edit book</h2><input id="bookId" type="hidden"><div class="field"><div class="actions"><input id="lookup" placeholder="Title, author, or ISBN"><button type="button" id="searchBook">Search</button></div><div id="results" class="results"></div></div><div class="row"><label>Title<input id="title" required></label><label>Author<input id="author"></label></div><div class="field"><label>Cover URL<input id="coverUrl"></label></div><div class="row"><label>Status<select id="status"><option>Want to Read</option><option>Currently Reading</option><option>Finished</option><option>DNF</option></select></label><label>Favorite character<input id="character"></label></div><div class="row"><fieldset><legend>Rating</legend><div id="rating" class="ratings"></div></fieldset><fieldset><legend>🌶️ Spice</legend><div id="spice" class="ratings"></div></fieldset></div><label>Notes<textarea id="notes" rows="5"></textarea></label><div class="row"><label>Recommend<select id="recommend"><option>Yes</option><option>Maybe</option><option>No</option></select></label><label>Tags<input id="tags"></label></div><label><input id="isPublic" type="checkbox" style="width:auto"> Public/shareable</label><div class="actions"><button type="button" id="cancel" class="alt">Cancel</button><button type="submit">Save</button></div></form></dialog>
+<dialog id="suggestDialog"><form id="suggestForm"><h2>Suggest a book</h2><label>Book title<input id="suggestBookTitle" required></label><label>Send to<select id="suggestTo" required></select></label><div class="actions" style="margin-top:14px"><button type="button" id="cancelSuggest" class="alt">Cancel</button><button type="submit">Send suggestion</button></div></form></dialog>
+<script>
+'use strict';
+const SUPABASE_URL='https://avvypwbowkslcrhdjcge.supabase.co';
+const SUPABASE_KEY='sb_publishable_KMnhbqqJ1EHl5TFsbvUM2A_s0TiZVkd';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=selector=>document.querySelector(selector);
+let profiles=[],active=null,pending=null,books=[],suggestions=[],rating=0,spice=0;
+const esc=value=>String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const stars=n=>`<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
+const chiles=n=>'🌶️'.repeat(n);
+const profileName=id=>profiles.find(p=>p.id===id)?.name||'Profile';
 
-create table if not exists public.profiles (
-  id uuid primary key,
-  name text not null unique,
-  created_at timestamptz not null default now()
-);
+async function loadProfiles(){
+  const {data,error}=await db.rpc('book_club_profile_options');
+  if(error){alert(`Profile setup error: ${error.message}`);return;}
+  profiles=data||[];
+  renderProfileButtons();
+  const remembered=sessionStorage.getItem('activeProfile');
+  if(remembered){
+    const profile=profiles.find(p=>p.id===remembered&&p.is_configured);
+    if(profile) openProfile(profile);
+  }
+}
+function renderProfileButtons(){
+  $('#profileButtons').innerHTML=profiles.map(p=>`<button class="profile-btn" data-id="${p.id}">${esc(p.name)}${p.is_configured?'':' · Set up'}</button>`).join('');
+  document.querySelectorAll('.profile-btn').forEach(button=>button.onclick=()=>selectProfile(button.dataset.id));
+}
+function selectProfile(id){
+  pending=profiles.find(p=>p.id===id);
+  const setup=!pending.is_configured;
+  $('#profileButtons').classList.add('hidden');
+  $('#passForm').classList.remove('hidden');
+  $('#selectedName').textContent=pending.name;
+  $('#passInstructions').textContent=setup?'First-time setup: create this profile’s passphrase.':'Enter this profile’s passphrase.';
+  $('#confirmWrap').classList.toggle('hidden',!setup);
+  $('#confirmPassphrase').required=setup;
+  const isOpen=pending.name.startsWith('Open Profile');
+  $('#profileNameWrap').classList.toggle('hidden',!(setup&&isOpen));
+  $('#profileName').required=setup&&isOpen;
+  $('#profileName').value=isOpen?'':pending.name;
+  $('#openProfileButton').textContent=setup?'Create Profile':'Open Journal';
+  $('#passphrase').value='';$('#confirmPassphrase').value='';$('#passError').textContent='';
+  (setup&&isOpen?$('#profileName'):$('#passphrase')).focus();
+}
+function openProfile(profile){
+  active=profile;sessionStorage.setItem('activeProfile',profile.id);
+  $('#gate').classList.add('hidden');$('#header').classList.remove('hidden');$('#main').classList.remove('hidden');
+  $('#journalTitle').textContent=`📚 ${profile.name}'s Book Journal`;
+  $('#profileLabel').textContent=`Signed in as ${profile.name}`;
+  loadAll();
+}
+$('#passForm').onsubmit=async event=>{
+  event.preventDefault();
+  const pass=$('#passphrase').value;
+  if(!pending.is_configured){
+    if(pass!==$('#confirmPassphrase').value){$('#passError').textContent='Passphrases do not match.';return;}
+    const name=$('#profileNameWrap').classList.contains('hidden')?pending.name:$('#profileName').value.trim();
+    const {data,error}=await db.rpc('book_club_setup_profile',{p_profile_id:pending.id,p_profile_name:name,p_passphrase:pass});
+    if(error||!data){$('#passError').textContent=error?.message||'This profile was already configured. Return and try again.';return;}
+    await loadProfiles();
+    const configured=profiles.find(p=>p.id===pending.id);openProfile(configured);return;
+  }
+  const {data,error}=await db.rpc('book_club_verify_profile',{p_profile_id:pending.id,p_passphrase:pass});
+  if(error||!data){$('#passError').textContent=error?.message||'Incorrect passphrase.';$('#passphrase').select();return;}
+  openProfile(pending);
+};
+$('#back').onclick=()=>{pending=null;$('#passForm').classList.add('hidden');$('#profileButtons').classList.remove('hidden');$('#passError').textContent='';};
+$('#signout').onclick=()=>{sessionStorage.removeItem('activeProfile');location.reload();};
 
-insert into public.profiles(id,name) values
- ('11111111-1111-4111-8111-111111111111','Noemi'),
- ('22222222-2222-4222-8222-222222222222','Victoria'),
- ('33333333-3333-4333-8333-333333333333','Kelly'),
- ('44444444-4444-4444-8444-444444444444','Open Profile 4'),
- ('55555555-5555-4555-8555-555555555555','Open Profile 5')
-on conflict(id) do nothing;
-
-alter table public.books add column if not exists profile_id uuid references public.profiles(id);
-update public.books set profile_id='11111111-1111-4111-8111-111111111111' where profile_id is null;
-create index if not exists books_profile_id_idx on public.books(profile_id);
-
-create table if not exists public.suggestions(
- id uuid primary key default gen_random_uuid(),
- from_profile_id uuid not null references public.profiles(id) on delete cascade,
- to_profile_id uuid not null references public.profiles(id) on delete cascade,
- book_title text not null,
- status text not null default 'new' check(status in('new','accepted','dismissed')),
- created_at timestamptz not null default now()
-);
-create index if not exists suggestions_to_profile_idx on public.suggestions(to_profile_id,status);
-
-create table if not exists public.profile_credentials(
- profile_id uuid primary key references public.profiles(id) on delete cascade,
- password_hash text not null,
- created_at timestamptz not null default now()
-);
-alter table public.profile_credentials enable row level security;
-revoke all on public.profile_credentials from anon,authenticated;
-
-create or replace function public.book_club_profile_options()
-returns table(id uuid,name text,is_configured boolean)
-language sql security definer set search_path=public
-as $$ select p.id,p.name,exists(select 1 from public.profile_credentials c where c.profile_id=p.id) from public.profiles p order by p.created_at,p.id $$;
-
-create or replace function public.book_club_setup_profile(p_profile_id uuid,p_profile_name text,p_passphrase text)
-returns boolean language plpgsql security definer set search_path=public,extensions
-as $$
-begin
- if length(trim(p_passphrase))<6 then raise exception 'Passphrase must be at least 6 characters.'; end if;
- if exists(select 1 from public.profile_credentials where profile_id=p_profile_id) then return false; end if;
- if not exists(select 1 from public.profiles where id=p_profile_id) then return false; end if;
- if nullif(trim(p_profile_name),'') is not null then update public.profiles set name=trim(p_profile_name) where id=p_profile_id; end if;
- insert into public.profile_credentials(profile_id,password_hash) values(p_profile_id,crypt(p_passphrase,gen_salt('bf')));
- return true;
-end $$;
-
-create or replace function public.book_club_verify_profile(p_profile_id uuid,p_passphrase text)
-returns boolean language sql security definer set search_path=public,extensions
-as $$ select coalesce((select password_hash=crypt(p_passphrase,password_hash) from public.profile_credentials where profile_id=p_profile_id),false) $$;
-
-grant execute on function public.book_club_profile_options() to anon,authenticated;
-grant execute on function public.book_club_setup_profile(uuid,text,text) to anon,authenticated;
-grant execute on function public.book_club_verify_profile(uuid,text) to anon,authenticated;
-
-grant select on public.profiles to anon,authenticated;
-grant select,insert,update,delete on public.suggestions to anon,authenticated;
-alter table public.profiles enable row level security;
-alter table public.suggestions enable row level security;
-drop policy if exists "v9 profiles select" on public.profiles;
-create policy "v9 profiles select" on public.profiles for select to anon,authenticated using(true);
-drop policy if exists "v9 suggestions select" on public.suggestions;
-create policy "v9 suggestions select" on public.suggestions for select to anon,authenticated using(true);
-drop policy if exists "v9 suggestions insert" on public.suggestions;
-create policy "v9 suggestions insert" on public.suggestions for insert to anon,authenticated with check(true);
-drop policy if exists "v9 suggestions update" on public.suggestions;
-create policy "v9 suggestions update" on public.suggestions for update to anon,authenticated using(true) with check(true);
-drop policy if exists "v9 suggestions delete" on public.suggestions;
-create policy "v9 suggestions delete" on public.suggestions for delete to anon,authenticated using(true);
+async function loadAll(){await Promise.all([loadBooks(),loadSuggestions()]);}
+async function loadBooks(){const {data,error}=await db.from('books').select('*').eq('profile_id',active.id).order('updated_at',{ascending:false});if(error)return alert(error.message);books=data||[];renderBooks();}
+async function loadSuggestions(){const {data,error}=await db.from('suggestions').select('*').eq('to_profile_id',active.id).eq('status','new').order('created_at',{ascending:false});if(error)return alert(error.message);suggestions=data||[];renderSuggestions();}
+function renderBooks(){
+  const q=$('#filter').value.toLowerCase(),status=$('#filterStatus').value;
+  const list=books.filter(b=>(!status||b.reading_status===status)&&[b.title,b.author,b.notes,b.tags].join(' ').toLowerCase().includes(q));
+  $('#grid').innerHTML=list.map(b=>`<article class="card">${b.cover_url?`<img src="${esc(b.cover_url)}" alt="Book cover">`:`<div class="cover">${esc(b.title)}</div>`}<div><span class="badge">${esc(b.reading_status)}</span><h3>${esc(b.title)}</h3><div class="muted">${esc(b.author)}</div><div>${stars(b.rating)} ${chiles(b.spice)}</div><div class="actions"><button class="alt" onclick="viewBook('${b.id}')">View</button><button onclick="editBook('${b.id}')">Edit</button><button onclick="suggestExisting('${b.id}')">Suggest</button><button onclick="shareBook('${b.id}')">Share</button><button class="danger" onclick="deleteBook('${b.id}')">Delete</button></div></div></article>`).join('');
+  const done=books.filter(b=>b.reading_status==='Finished').length,goal=Number(localStorage.getItem(`goal-${active.id}`)||24);
+  $('#empty').classList.toggle('hidden',books.length>0);$('#count').textContent=books.length;$('#avg').textContent=books.length?(books.reduce((sum,b)=>sum+b.rating,0)/books.length).toFixed(1):'0.0';$('#done').textContent=done;$('#goal').value=goal;$('#progress').max=goal;$('#progress').value=done;
+}
+function renderSuggestions(){
+  $('#inboxCount').textContent=suggestions.length;
+  $('#suggestions').innerHTML=suggestions.length?suggestions.map(s=>`<div class="inbox-card"><div><b>${esc(s.book_title)}</b><div class="muted">Suggested by ${esc(profileName(s.from_profile_id))}</div></div><div class="actions"><button onclick="acceptSuggestion('${s.id}')">Add to Want to Read</button><button class="alt" onclick="dismissSuggestion('${s.id}')">Dismiss</button></div></div>`).join(''):'<p>No new suggestions.</p>';
+}
+function makeRating(selector,setter,symbol){for(let i=1;i<=5;i++){const b=document.createElement('button');b.type='button';b.textContent=symbol;b.onclick=()=>{setter(i);paintRatings();};$(selector).appendChild(b);}}
+function paintRatings(){[...$('#rating').children].forEach((b,i)=>b.classList.toggle('on',i<rating));[...$('#spice').children].forEach((b,i)=>b.classList.toggle('on',i<spice));}
+function openEditor(book={}){$('#bookForm').reset();$('#results').innerHTML='';$('#bookId').value=book.id||'';$('#title').value=book.title||'';$('#author').value=book.author||'';$('#coverUrl').value=book.cover_url||'';$('#status').value=book.reading_status||'Want to Read';$('#character').value=book.favorite_character||'';$('#notes').value=book.notes||'';$('#recommend').value=book.recommendation||'Maybe';$('#tags').value=book.tags||'';$('#isPublic').checked=!!book.is_public;rating=book.rating||0;spice=book.spice||0;paintRatings();$('#editor').showModal();}
+window.editBook=id=>openEditor(books.find(b=>b.id===id));
+window.viewBook=id=>{const b=books.find(x=>x.id===id);alert(`${b.title}\n${b.author||''}\nRating ${b.rating}/5 | Spice ${b.spice}/5\nFavorite: ${b.favorite_character||''}\nRecommend: ${b.recommendation}\n\n${b.notes||''}`);};
+window.deleteBook=async id=>{if(confirm('Delete this book?')){const {error}=await db.from('books').delete().eq('id',id).eq('profile_id',active.id);error?alert(error.message):loadBooks();}};
+function openSuggest(title=''){$('#suggestForm').reset();$('#suggestBookTitle').value=title;$('#suggestTo').innerHTML=profiles.filter(p=>p.id!==active.id&&p.is_configured).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');if(!$('#suggestTo').options.length){alert('No other profiles are configured yet.');return;}$('#suggestDialog').showModal();}
+window.suggestExisting=id=>openSuggest(books.find(b=>b.id===id)?.title||'');
+$('#suggestForm').onsubmit=async event=>{event.preventDefault();const {error}=await db.from('suggestions').insert({from_profile_id:active.id,to_profile_id:$('#suggestTo').value,book_title:$('#suggestBookTitle').value.trim()});if(error)return alert(error.message);$('#suggestDialog').close();alert('Suggestion sent.');};
+window.acceptSuggestion=async id=>{const suggestion=suggestions.find(x=>x.id===id);const add=await db.from('books').insert({profile_id:active.id,title:suggestion.book_title,reading_status:'Want to Read',rating:0,spice:0,recommendation:'Maybe',is_public:false,updated_at:new Date().toISOString()});if(add.error)return alert(add.error.message);await db.from('suggestions').update({status:'accepted'}).eq('id',id);loadAll();};
+window.dismissSuggestion=async id=>{await db.from('suggestions').update({status:'dismissed'}).eq('id',id);loadSuggestions();};
+window.shareBook=async id=>{const b=books.find(x=>x.id===id);if(!b.is_public){if(!confirm('Make this book public?'))return;const {error}=await db.from('books').update({is_public:true}).eq('id',id).eq('profile_id',active.id);if(error)return alert(error.message);}const url=`${location.origin}${location.pathname}?share=${b.share_token}`;navigator.share?await navigator.share({title:b.title,url}):(await navigator.clipboard.writeText(url),alert('Link copied'));};
+$('#bookForm').onsubmit=async event=>{event.preventDefault();const id=$('#bookId').value,row={profile_id:active.id,title:$('#title').value.trim(),author:$('#author').value.trim(),cover_url:$('#coverUrl').value.trim(),rating,spice,reading_status:$('#status').value,favorite_character:$('#character').value.trim(),notes:$('#notes').value.trim(),recommendation:$('#recommend').value,tags:$('#tags').value.trim(),is_public:$('#isPublic').checked,updated_at:new Date().toISOString()};const result=id?await db.from('books').update(row).eq('id',id).eq('profile_id',active.id):await db.from('books').insert(row);if(result.error)return alert(result.error.message);$('#editor').close();loadBooks();};
+$('#searchBook').onclick=async()=>{const q=$('#lookup').value.trim();if(!q)return;const data=await(await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,cover_i`)).json();$('#results').innerHTML=data.docs.map((b,i)=>`<button type="button" class="result" data-i="${i}">${b.cover_i?`<img src="https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg" alt="">`:''}<span>${esc(b.title)}<small>${esc((b.author_name||[]).join(', '))}</small></span></button>`).join('');document.querySelectorAll('.result').forEach(x=>x.onclick=()=>{const b=data.docs[Number(x.dataset.i)];$('#title').value=b.title;$('#author').value=(b.author_name||[]).join(', ');$('#coverUrl').value=b.cover_i?`https://covers.openlibrary.org/b/id/${b.cover_i}-L.jpg`:'';});};
+async function openShared(){const token=new URLSearchParams(location.search).get('share');if(!token)return false;const {data}=await db.from('books').select('*').eq('share_token',token).eq('is_public',true).maybeSingle();$('#gate').classList.add('hidden');$('#header').classList.remove('hidden');$('#main').classList.remove('hidden');$('#app').classList.add('hidden');$('#shared').classList.remove('hidden');$('#shared').innerHTML=data?`${data.cover_url?`<img src="${esc(data.cover_url)}" alt="Book cover">`:''}<h1>${esc(data.title)}</h1><p>${esc(data.author)}</p><p>${stars(data.rating)} ${chiles(data.spice)}</p><p>${esc(data.notes)}</p>`:'<h2>Shared book not found</h2>';return true;}
+$('#add').onclick=()=>openEditor();$('#cancel').onclick=()=>$('#editor').close();$('#suggestTitle').onclick=()=>openSuggest();$('#cancelSuggest').onclick=()=>$('#suggestDialog').close();$('#filter').oninput=renderBooks;$('#filterStatus').onchange=renderBooks;$('#goal').onchange=()=>{localStorage.setItem(`goal-${active.id}`,$('#goal').value);renderBooks();};$('#libraryTab').onclick=()=>{$('#library').classList.remove('hidden');$('#inbox').classList.add('hidden');};$('#inboxTab').onclick=()=>{$('#library').classList.add('hidden');$('#inbox').classList.remove('hidden');};$('#theme').onclick=()=>document.body.classList.toggle('dark');$('#pdf').onclick=()=>window.print();makeRating('#rating',v=>rating=rating===v?0:v,'★');makeRating('#spice',v=>spice=spice===v?0:v,'🌶️');(async()=>{if(!await openShared())await loadProfiles();})();
+</script></body></html>
