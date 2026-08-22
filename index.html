@@ -1,49 +1,79 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#5b4b8a">
-<title>Noemi's Book Journal V8.1</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-:root{--p:#5b4b8a;--bg:#fbf8f2;--fg:#29243a;--card:#fff;--line:#ddd5e5;--muted:#756d80}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}body.dark{--bg:#17151d;--fg:#f5f1fb;--card:#25212c;--line:#4b4255;--muted:#bbb1c6}header,main{max-width:1080px;margin:auto;padding:18px}header{display:flex;justify-content:space-between;align-items:center;gap:12px}h1,h2,h3{font-family:Georgia,serif}button{border:0;border-radius:10px;padding:10px 13px;background:var(--p);color:#fff;font-weight:700;cursor:pointer}.alt{background:#eee9f4;color:var(--p)}.danger{background:#f6dede;color:#922}.hidden{display:none!important}.hero{padding:22px;border-radius:20px;background:linear-gradient(130deg,#3d315e,#745c99);color:#fff;display:flex;justify-content:space-between}.stats,.toolbar,.actions{display:flex;gap:8px;flex-wrap:wrap}.stats{gap:20px}.stats b{display:block;font-size:1.5rem}.toolbar{margin:18px 0}.toolbar input{flex:1}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;display:grid;grid-template-columns:90px 1fr;gap:12px}.card img,.cover{width:90px;height:135px;object-fit:cover;border-radius:8px;background:#eee9f4}.cover{display:grid;place-items:center;text-align:center;color:var(--p)}.muted{color:var(--muted);font-size:.85rem}.stars{color:#dda423}.badge{display:inline-block;background:#eee9f4;color:var(--p);border-radius:99px;padding:4px 7px;font-size:.7rem;font-weight:700}input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--fg);font:inherit}.field{margin:11px 0}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}dialog{width:min(760px,95vw);max-height:94vh;border:0;border-radius:18px;background:var(--card);color:var(--fg);padding:20px}dialog::backdrop{background:#211a30aa}dialog form{max-height:88vh;overflow:auto}.ratings{display:flex}.ratings button{background:none;border:0;font-size:1.6rem;padding:4px;opacity:.22;filter:grayscale(.7)}.ratings button.on{opacity:1;filter:none}.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}.result{display:flex;text-align:left;gap:6px;background:#eee9f4;color:#29243a}.result img{width:38px;height:55px;object-fit:cover}.lock{position:fixed;inset:0;z-index:999;display:grid;place-items:center;padding:20px;background:linear-gradient(145deg,#2f254b,#745c99)}.lock-card{width:min(430px,100%);padding:28px;border-radius:22px;background:#fff;color:#29243a;text-align:center;box-shadow:0 30px 90px #0006}.lock-card input{background:#fff;color:#29243a;margin:10px 0}.error{color:#922;min-height:1.3em}.shared{max-width:620px;margin:20px auto;text-align:center;background:var(--card);padding:22px;border-radius:18px}.shared img{max-width:180px;border-radius:8px}@media(max-width:650px){.row{grid-template-columns:1fr}.hero{display:block}.toolbar{display:grid}.card{grid-template-columns:80px 1fr}.card img,.cover{width:80px;height:120px}}@media print{header,.toolbar,.actions{display:none!important}}
-</style>
-</head>
-<body>
-<section id="lockScreen" class="lock"><div class="lock-card"><div style="font-size:3rem">📚</div><h1>Noemi's Book Journal</h1><p>Enter the passphrase to continue.</p><form id="lockForm"><input id="passphrase" type="password" autocomplete="current-password" placeholder="Passphrase" required><button type="submit" style="width:100%">Open Journal</button></form><p id="lockError" class="error"></p></div></section>
-<header id="siteHeader" class="hidden"><h1>📚 Noemi's Book Journal 📚</h1><div class="actions"><button id="theme" class="alt">Dark mode</button><button id="pdf" class="alt">Export PDF</button><button id="lockButton" class="alt">Lock</button></div></header>
-<main id="siteMain" class="hidden"><section id="shared" class="shared hidden"></section><section id="app"><div class="hero"><div><h2>Your reading life</h2><label>Reading goal <input id="goal" type="number" min="1" value="24" style="width:75px"></label><progress id="progress" value="0" max="24"></progress></div><div class="stats"><div><b id="count">0</b>Books</div><div><b id="avg">0.0</b>Avg</div><div><b id="done">0</b>Finished</div></div></div><div class="toolbar"><input id="filter" placeholder="Search journal"><select id="filterStatus"><option value="">All statuses</option><option>Want to Read</option><option>Currently Reading</option><option>Finished</option><option>DNF</option></select><button id="add">＋ Add book</button></div><div id="grid" class="grid"></div><div id="empty"><h2>No books yet</h2></div></section></main>
-<dialog id="editor"><form id="bookForm"><h2>Add or edit book</h2><input id="bookId" type="hidden"><div class="field"><div class="actions"><input id="lookup" placeholder="Title, author, or ISBN"><button type="button" id="searchBook">Search</button></div><div id="results" class="results"></div></div><div class="row"><label>Title<input id="title" required></label><label>Author<input id="author"></label></div><div class="field"><label>Cover URL<input id="coverUrl"></label><label>Or photo<input id="coverFile" type="file" accept="image/*" capture="environment"></label></div><div class="row"><label>Status<select id="status"><option>Want to Read</option><option>Currently Reading</option><option>Finished</option><option>DNF</option></select></label><label>Favorite character<input id="character"></label></div><div class="row"><fieldset><legend>Rating</legend><div id="rating" class="ratings"></div></fieldset><fieldset><legend>🌶️ Spice Level</legend><div id="spice" class="ratings"></div></fieldset></div><label>Notes<textarea id="notes" rows="5"></textarea></label><div class="row"><label>Recommend<select id="recommend"><option>Yes</option><option>Maybe</option><option>No</option></select></label><label>Tags<input id="tags"></label></div><label><input id="isPublic" type="checkbox" style="width:auto"> Public/shareable</label><div class="actions"><button type="button" id="cancel" class="alt">Cancel</button><button type="submit">Save</button></div></form></dialog>
-<script>
-'use strict';
-const JOURNAL_PASSPHRASE = 'READING-1S-FUN-2026';
-const SUPABASE_URL = 'https://avvypwbowkslcrhdjcge.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_KMnhbqqJ1EHl5TFsbvUM2A_s0TiZVkd';
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const $ = selector => document.querySelector(selector);
-let books = [], rating = 0, spice = 0;
-const esc = value => String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const stars = n => `<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
-const chiles = n => '🌶️'.repeat(n);
-function unlockJournal(){sessionStorage.setItem('noemiUnlocked','yes');$('#lockScreen').classList.add('hidden');$('#siteHeader').classList.remove('hidden');$('#siteMain').classList.remove('hidden');}
-function lockJournal(){sessionStorage.removeItem('noemiUnlocked');$('#siteHeader').classList.add('hidden');$('#siteMain').classList.add('hidden');$('#lockScreen').classList.remove('hidden');$('#passphrase').value='';$('#lockError').textContent='';$('#passphrase').focus();}
-$('#lockForm').addEventListener('submit', event => {event.preventDefault();if($('#passphrase').value === JOURNAL_PASSPHRASE){unlockJournal();}else{$('#lockError').textContent='Incorrect passphrase.';$('#passphrase').select();}});
-$('#lockButton').addEventListener('click', lockJournal);
-if(sessionStorage.getItem('noemiUnlocked') === 'yes') unlockJournal();
-function makeRating(selector,setter,symbol){for(let i=1;i<=5;i++){const b=document.createElement('button');b.type='button';b.textContent=symbol;b.setAttribute('aria-label',`${i} of 5`);b.addEventListener('click',()=>{setter(i);paintRatings();});$(selector).appendChild(b);}}
-function paintRatings(){[...$('#rating').children].forEach((b,i)=>b.classList.toggle('on',i<rating));[...$('#spice').children].forEach((b,i)=>b.classList.toggle('on',i<spice));}
-async function loadBooks(){const {data,error}=await db.from('books').select('*').order('updated_at',{ascending:false});if(error){alert(error.message);return;}books=data||[];render();}
-function render(){const q=$('#filter').value.toLowerCase(),fs=$('#filterStatus').value;const list=books.filter(b=>(!fs||b.reading_status===fs)&&[b.title,b.author,b.notes,b.tags].join(' ').toLowerCase().includes(q));$('#grid').innerHTML=list.map(b=>`<article class="card">${b.cover_url?`<img src="${esc(b.cover_url)}" alt="Book cover">`:`<div class="cover">${esc(b.title)}</div>`}<div><span class="badge">${esc(b.reading_status)}</span><h3>${esc(b.title)}</h3><div class="muted">${esc(b.author)}</div><div>${stars(b.rating)} ${chiles(b.spice)}</div><div class="actions"><button class="alt" onclick="viewBook('${b.id}')">View</button><button onclick="editBook('${b.id}')">Edit</button><button onclick="shareBook('${b.id}')">Share</button><button class="danger" onclick="deleteBook('${b.id}')">Delete</button></div></div></article>`).join('');const done=books.filter(b=>b.reading_status==='Finished').length,goal=Number(localStorage.getItem('goal')||24);$('#empty').classList.toggle('hidden',books.length>0);$('#count').textContent=books.length;$('#avg').textContent=books.length?(books.reduce((a,b)=>a+b.rating,0)/books.length).toFixed(1):'0.0';$('#done').textContent=done;$('#goal').value=goal;$('#progress').max=goal;$('#progress').value=done;}
-function openEditor(book={}){$('#bookForm').reset();$('#results').innerHTML='';$('#bookId').value=book.id||'';$('#title').value=book.title||'';$('#author').value=book.author||'';$('#coverUrl').value=book.cover_url||'';$('#status').value=book.reading_status||'Want to Read';$('#character').value=book.favorite_character||'';$('#notes').value=book.notes||'';$('#recommend').value=book.recommendation||'Maybe';$('#tags').value=book.tags||'';$('#isPublic').checked=Boolean(book.is_public);rating=book.rating||0;spice=book.spice||0;paintRatings();$('#editor').showModal();}
-window.editBook=id=>openEditor(books.find(b=>b.id===id));
-window.viewBook=id=>{const b=books.find(x=>x.id===id);alert(`${b.title}\n${b.author||''}\nRating ${b.rating}/5 | Spice ${b.spice}/5\nFavorite: ${b.favorite_character||''}\nRecommend: ${b.recommendation}\n\n${b.notes||''}`);};
-window.deleteBook=async id=>{if(!confirm('Delete this book?'))return;const {error}=await db.from('books').delete().eq('id',id);error?alert(error.message):loadBooks();};
-window.shareBook=async id=>{const b=books.find(x=>x.id===id);if(!b.is_public){if(!confirm('Make this book public?'))return;const {error}=await db.from('books').update({is_public:true}).eq('id',id);if(error){alert(error.message);return;}}const url=`${location.origin}${location.pathname}?share=${b.share_token}`;if(navigator.share)await navigator.share({title:b.title,url});else{await navigator.clipboard.writeText(url);alert('Link copied');}};
-$('#bookForm').addEventListener('submit',async event=>{event.preventDefault();const id=$('#bookId').value;const row={title:$('#title').value.trim(),author:$('#author').value.trim(),cover_url:$('#coverUrl').value.trim(),rating,spice,reading_status:$('#status').value,favorite_character:$('#character').value.trim(),notes:$('#notes').value.trim(),recommendation:$('#recommend').value,tags:$('#tags').value.trim(),is_public:$('#isPublic').checked,updated_at:new Date().toISOString()};const result=id?await db.from('books').update(row).eq('id',id):await db.from('books').insert(row);if(result.error){alert(result.error.message);return;}$('#editor').close();loadBooks();});
-$('#searchBook').addEventListener('click',async()=>{const q=$('#lookup').value.trim();if(!q)return;$('#results').textContent='Searching...';try{const data=await(await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,cover_i`)).json();$('#results').innerHTML=data.docs.map((b,i)=>`<button type="button" class="result" data-i="${i}">${b.cover_i?`<img src="https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg" alt="">`:''}<span>${esc(b.title)}<small>${esc((b.author_name||[]).join(', '))}</small></span></button>`).join('');document.querySelectorAll('.result').forEach(x=>x.addEventListener('click',()=>{const b=data.docs[Number(x.dataset.i)];$('#title').value=b.title||'';$('#author').value=(b.author_name||[]).join(', ');$('#coverUrl').value=b.cover_i?`https://covers.openlibrary.org/b/id/${b.cover_i}-L.jpg`:'';}));}catch{$('#results').textContent='Search unavailable.';}});
-$('#coverFile').addEventListener('change',event=>{const f=event.target.files[0];if(!f)return;if(f.size>4000000){alert('Image must be smaller than 4 MB');return;}const reader=new FileReader();reader.onload=()=>$('#coverUrl').value=reader.result;reader.readAsDataURL(f);});
-async function openShared(){const token=new URLSearchParams(location.search).get('share');if(!token)return false;unlockJournal();const {data}=await db.from('books').select('*').eq('share_token',token).eq('is_public',true).maybeSingle();$('#app').classList.add('hidden');$('#shared').classList.remove('hidden');$('#shared').innerHTML=data?`${data.cover_url?`<img src="${esc(data.cover_url)}" alt="Book cover">`:''}<h1>${esc(data.title)}</h1><p>${esc(data.author)}</p><p>${stars(data.rating)} ${chiles(data.spice)}</p><p>${esc(data.notes)}</p>`:'<h2>Shared book not found</h2>';return true;}
-$('#add').addEventListener('click',()=>openEditor());$('#cancel').addEventListener('click',()=>$('#editor').close());$('#filter').addEventListener('input',render);$('#filterStatus').addEventListener('change',render);$('#goal').addEventListener('change',()=>{localStorage.setItem('goal',$('#goal').value);render();});$('#theme').addEventListener('click',()=>document.body.classList.toggle('dark'));$('#pdf').addEventListener('click',()=>window.print());makeRating('#rating',v=>rating=rating===v?0:v,'★');makeRating('#spice',v=>spice=spice===v?0:v,'🌶️');(async()=>{if(!await openShared())await loadBooks();})();
-</script>
-</body></html>
+-- FRIENDS BOOK CLUB V9.2 MIGRATION
+-- SAFE MIGRATION: does not drop public.books and does not delete any existing book rows.
+create extension if not exists pgcrypto;
+
+create table if not exists public.profiles (
+  id uuid primary key,
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+insert into public.profiles(id,name) values
+ ('11111111-1111-4111-8111-111111111111','Noemi'),
+ ('22222222-2222-4222-8222-222222222222','Victoria'),
+ ('33333333-3333-4333-8333-333333333333','Kelly'),
+ ('44444444-4444-4444-8444-444444444444','Open Profile 4'),
+ ('55555555-5555-4555-8555-555555555555','Open Profile 5')
+on conflict(id) do nothing;
+
+alter table public.books add column if not exists profile_id uuid references public.profiles(id);
+update public.books set profile_id='11111111-1111-4111-8111-111111111111' where profile_id is null;
+create index if not exists books_profile_id_idx on public.books(profile_id);
+
+create table if not exists public.suggestions(
+ id uuid primary key default gen_random_uuid(),
+ from_profile_id uuid not null references public.profiles(id) on delete cascade,
+ to_profile_id uuid not null references public.profiles(id) on delete cascade,
+ book_title text not null,
+ status text not null default 'new' check(status in('new','accepted','dismissed')),
+ created_at timestamptz not null default now()
+);
+create index if not exists suggestions_to_profile_idx on public.suggestions(to_profile_id,status);
+
+create table if not exists public.profile_credentials(
+ profile_id uuid primary key references public.profiles(id) on delete cascade,
+ password_hash text not null,
+ created_at timestamptz not null default now()
+);
+alter table public.profile_credentials enable row level security;
+revoke all on public.profile_credentials from anon,authenticated;
+
+create or replace function public.book_club_profile_options()
+returns table(id uuid,name text,is_configured boolean)
+language sql security definer set search_path=public
+as $$ select p.id,p.name,exists(select 1 from public.profile_credentials c where c.profile_id=p.id) from public.profiles p order by p.created_at,p.id $$;
+
+create or replace function public.book_club_setup_profile(p_profile_id uuid,p_profile_name text,p_passphrase text)
+returns boolean language plpgsql security definer set search_path=public,extensions
+as $$
+begin
+ if length(trim(p_passphrase))<6 then raise exception 'Passphrase must be at least 6 characters.'; end if;
+ if exists(select 1 from public.profile_credentials where profile_id=p_profile_id) then return false; end if;
+ if not exists(select 1 from public.profiles where id=p_profile_id) then return false; end if;
+ if nullif(trim(p_profile_name),'') is not null then update public.profiles set name=trim(p_profile_name) where id=p_profile_id; end if;
+ insert into public.profile_credentials(profile_id,password_hash) values(p_profile_id,crypt(p_passphrase,gen_salt('bf')));
+ return true;
+end $$;
+
+create or replace function public.book_club_verify_profile(p_profile_id uuid,p_passphrase text)
+returns boolean language sql security definer set search_path=public,extensions
+as $$ select coalesce((select password_hash=crypt(p_passphrase,password_hash) from public.profile_credentials where profile_id=p_profile_id),false) $$;
+
+grant execute on function public.book_club_profile_options() to anon,authenticated;
+grant execute on function public.book_club_setup_profile(uuid,text,text) to anon,authenticated;
+grant execute on function public.book_club_verify_profile(uuid,text) to anon,authenticated;
+
+grant select on public.profiles to anon,authenticated;
+grant select,insert,update,delete on public.suggestions to anon,authenticated;
+alter table public.profiles enable row level security;
+alter table public.suggestions enable row level security;
+drop policy if exists "v9 profiles select" on public.profiles;
+create policy "v9 profiles select" on public.profiles for select to anon,authenticated using(true);
+drop policy if exists "v9 suggestions select" on public.suggestions;
+create policy "v9 suggestions select" on public.suggestions for select to anon,authenticated using(true);
+drop policy if exists "v9 suggestions insert" on public.suggestions;
+create policy "v9 suggestions insert" on public.suggestions for insert to anon,authenticated with check(true);
+drop policy if exists "v9 suggestions update" on public.suggestions;
+create policy "v9 suggestions update" on public.suggestions for update to anon,authenticated using(true) with check(true);
+drop policy if exists "v9 suggestions delete" on public.suggestions;
+create policy "v9 suggestions delete" on public.suggestions for delete to anon,authenticated using(true);
